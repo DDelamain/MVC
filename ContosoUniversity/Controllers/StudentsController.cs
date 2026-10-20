@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using ContosoUniversity.Data;
 using ContosoUniversity.Models;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ContosoUniversity.Controllers
 {
@@ -25,7 +26,7 @@ namespace ContosoUniversity.Controllers
 			string sortOrder,
 			string searchString,
 			int? pageIndex,
-			int itemsPerPage=3
+			int itemsPerPage = 3
 		)
 		{
 			ViewData["NameSortParam"] = String.IsNullOrEmpty(sortOrder) ? "name_desc" : "";
@@ -54,7 +55,7 @@ namespace ContosoUniversity.Controllers
 				case "date_asc":	students = students.OrderBy(s => s.EnrollmentDate);				break;
 				default:			students = students.OrderBy(s => s.LastName);					break;
 			}
-
+			ViewData["ItemsPerPage"] = itemsPerPage;
 			int pageSize = itemsPerPage;
 			return View
 			(
@@ -68,7 +69,7 @@ namespace ContosoUniversity.Controllers
 			//return View(await students.ToListAsync());
 			//return View(await _context.Students.ToListAsync());
 		}
-
+		
 		// GET: Students/Details/5
 		public async Task<IActionResult> Details(int? id)
 		{
