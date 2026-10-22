@@ -39,13 +39,15 @@
 					   asp-route-searchString="@ViewData["CurrentFilter"]"
 						asp-route-itemsPerPage="@ViewData["ItemsPerPage"]"
 					>
-						Last name
+						@* Last name *@
+						@Html.DisplayNameFor(m => m.First().LastName)
 						@* @Html.DisplayNameFor(model => model.LastName) *@
 					</a>
 					@* @Html.DisplayNameFor(model => model.LastName) *@
 				</th>
 				<th>
-					First name
+					@* First name *@
+					@Html.DisplayNameFor(m => m.First().FirstName)
 					@* @Html.DisplayNameFor(model => model.FirstName) *@
 				</th>
 				<th>
