@@ -7,151 +7,196 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using ContosoUniversity.Data;
 using ContosoUniversity.Models;
+using ContosoUniversity.Models.ViewModels;
 
 namespace ContosoUniversity.Controllers
 {
-    public class InstructorsController : Controller
-    {
-        private readonly ContosoUniversityContext _context;
+	public class InstructorsController : Controller
+	{
+		private readonly ContosoUniversityContext _context;
 
-        public InstructorsController(ContosoUniversityContext context)
+		public InstructorsController(ContosoUniversityContext context)
+		{
+			_context = context;
+		}
+
+		// GET: Instructors
+		/*public async Task<IActionResult> Index()
         {
-            _context = context;
-        }
+            return View(await _context.Instructors.ToListAsync());
+        }*/
+		public async Task<IActionResult> Index(int? id, int? courseID)
+		{
+			InstructorIndexData viewModel = new InstructorIndexData();
+			viewModel.Instructors = await _context
+				.Instructors
+				.Include(i => i.OfficeAssignment)
+				.Include(i => i.CourseAssignments)
+					.ThenInclude(ca => ca.Course)
+						.ThenInclude(c => c.Enrollments)
+							.ThenInclude(e => e.Student)
+				.Include(i => i.CourseAssignments)
+					.ThenInclude(ca => ca.Course)
+						.ThenInclude(c => c.Department)
+				.AsNoTracking()
+				.OrderBy(i => i.LastName)
+				.ToListAsync();
 
-        // GET: Instructors
-        public async Task<IActionResult> Index()
-        {
-            return View(await _context.Instructor.ToListAsync());
-        }
+			if (id != null)
+			{
+				ViewData["InstructorID"] = id.Value;
 
-        // GET: Instructors/Details/5
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
+				/*Instructor instructor = viewModel
+					.Instructors
+					.Where(i => i.ID == id.Value).Single();
+				viewModel.Courses = instructor
+					.CourseAssignments
+					.Select(ca => ca.Course);*/
 
-            var instructor = await _context.Instructor
-                .FirstOrDefaultAsync(m => m.ID == id);
-            if (instructor == null)
-            {
-                return NotFound();
-            }
+				viewModel.Courses = viewModel
+					.Instructors.Where(i => i.ID == id.Value).Single()
+					.CourseAssignments.Select(ca => ca.Course);
+			}
 
-            return View(instructor);
-        }
+			if (courseID != null)
+			{
+				ViewData["CourseID"] = courseID.Value;
+				viewModel.Enrollments = viewModel
+					.Courses.Where(c => c.CourseID == courseID.Value)
+					.Single()
+					.Enrollments;
+			}
 
-        // GET: Instructors/Create
-        public IActionResult Create()
-        {
-            return View();
-        }
+			return View(viewModel);
+		}
 
-        // POST: Instructors/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("ID,LastName,FirstName,HireDate")] Instructor instructor)
-        {
-            if (ModelState.IsValid)
-            {
-                _context.Add(instructor);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            return View(instructor);
-        }
+		// GET: Instructors/Details/5
+		public async Task<IActionResult> Details(int? id)
+		{
+			if (id == null)
+			{
+				return NotFound();
+			}
 
-        // GET: Instructors/Edit/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
+			var instructor = await _context.Instructors
+				.FirstOrDefaultAsync(m => m.ID == id);
+			if (instructor == null)
+			{
+				return NotFound();
+			}
 
-            var instructor = await _context.Instructor.FindAsync(id);
-            if (instructor == null)
-            {
-                return NotFound();
-            }
-            return View(instructor);
-        }
+			return View(instructor);
+		}
 
-        // POST: Instructors/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("ID,LastName,FirstName,HireDate")] Instructor instructor)
-        {
-            if (id != instructor.ID)
-            {
-                return NotFound();
-            }
+		// GET: Instructors/Create
+		public IActionResult Create()
+		{
+			return View();
+		}
 
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(instructor);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!InstructorExists(instructor.ID))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
-            return View(instructor);
-        }
+		// POST: Instructors/Create
+		// To protect from overposting attacks, enable the specific properties you want to bind to.
+		// For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> Create([Bind("ID,LastName,FirstName,HireDate")] Instructor instructor)
+		{
+			if (ModelState.IsValid)
+			{
+				_context.Add(instructor);
+				await _context.SaveChangesAsync();
+				return RedirectToAction(nameof(Index));
+			}
+			return View(instructor);
+		}
 
-        // GET: Instructors/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
+		// GET: Instructors/Edit/5
+		public async Task<IActionResult> Edit(int? id)
+		{
+			if (id == null)
+			{
+				return NotFound();
+			}
 
-            var instructor = await _context.Instructor
-                .FirstOrDefaultAsync(m => m.ID == id);
-            if (instructor == null)
-            {
-                return NotFound();
-            }
+			var instructor = await _context.Instructors.FindAsync(id);
+			if (instructor == null)
+			{
+				return NotFound();
+			}
+			return View(instructor);
+		}
 
-            return View(instructor);
-        }
+		// POST: Instructors/Edit/5
+		// To protect from overposting attacks, enable the specific properties you want to bind to.
+		// For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> Edit(int id, [Bind("ID,LastName,FirstName,HireDate")] Instructor instructor)
+		{
+			if (id != instructor.ID)
+			{
+				return NotFound();
+			}
 
-        // POST: Instructors/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var instructor = await _context.Instructor.FindAsync(id);
-            if (instructor != null)
-            {
-                _context.Instructor.Remove(instructor);
-            }
+			if (ModelState.IsValid)
+			{
+				try
+				{
+					_context.Update(instructor);
+					await _context.SaveChangesAsync();
+				}
+				catch (DbUpdateConcurrencyException)
+				{
+					if (!InstructorExists(instructor.ID))
+					{
+						return NotFound();
+					}
+					else
+					{
+						throw;
+					}
+				}
+				return RedirectToAction(nameof(Index));
+			}
+			return View(instructor);
+		}
 
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
+		// GET: Instructors/Delete/5
+		public async Task<IActionResult> Delete(int? id)
+		{
+			if (id == null)
+			{
+				return NotFound();
+			}
 
-        private bool InstructorExists(int id)
-        {
-            return _context.Instructor.Any(e => e.ID == id);
-        }
-    }
+			var instructor = await _context.Instructors
+				.FirstOrDefaultAsync(m => m.ID == id);
+			if (instructor == null)
+			{
+				return NotFound();
+			}
+
+			return View(instructor);
+		}
+
+		// POST: Instructors/Delete/5
+		[HttpPost, ActionName("Delete")]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> DeleteConfirmed(int id)
+		{
+			var instructor = await _context.Instructors.FindAsync(id);
+			if (instructor != null)
+			{
+				_context.Instructors.Remove(instructor);
+			}
+
+			await _context.SaveChangesAsync();
+			return RedirectToAction(nameof(Index));
+		}
+
+		private bool InstructorExists(int id)
+		{
+			return _context.Instructors.Any(e => e.ID == id);
+		}
+	}
 }
